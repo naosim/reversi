@@ -58,8 +58,8 @@ var onClickSquareButton = (view) => {
   let p = new Pos(new Horizontal(h), new Vertical(v))
   var s = board.look(p)
   
-  if(s) {
-    var disk = new Disk(s.value == Side.dark ? Side.light : Side.dark);
+  if(s.isDefined()) {
+    var disk = new Disk(s.get().getValue() == Side.dark ? Side.light : Side.dark);
     updateBoard(board.replace(p, disk))
   } else {
     updateBoard(board.place(p, new Disk(side)));
@@ -76,8 +76,8 @@ var updateDisplay = () => {
       var s = board.look(new Pos(new Horizontal(h[x]), new Vertical(v[y])))
       var selector = `button[h="${_h}"][v="${_v}"]`
       var b = document.querySelector(selector)
-      if(s) {
-        b.innerHTML = s.value == Side.dark ? '●' : '○'
+      if(s.isDefined()) {
+        b.innerHTML = s.get().getValue() == Side.dark ? '●' : '○'
       } else {
         b.innerHTML = ''
       }
