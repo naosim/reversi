@@ -34,12 +34,18 @@ var getCurrentBoard = () => {
 }
 var updateBoard = (board) => boardLog.push(board)
 
+var getCurrentSide = () => {
+  let radios = document.querySelectorAll('input[type="radio"]');
+  radios.filter = Array.prototype.filter;
+  return radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
+}
+
 let h = 'abcdefgh'
 let v = '12345678'
 var table = '<table>';
-for(var x = 0; x < h.length; x++) {
+for(var y = 0; y < v.length; y++) {
   table += '<tr>';
-  for(var y = 0; y < v.length; y++) {
+    for(var x = 0; x < h.length; x++) {
     var s = board.look(new Pos(new Horizontal(h[x]), new Vertical(v[y])))
     table += `<td><button h="${h[x]}" v="${v[y]}" onClick="onClickSquareButton(this)"></button></td>`
   }
@@ -48,11 +54,14 @@ for(var x = 0; x < h.length; x++) {
 table += '</table>';
 document.querySelector('div').innerHTML = table;
 
+var aaa = null
+
 var onClickSquareButton = (view) => {
   let board = getCurrentBoard()
-  let radios = document.querySelectorAll('input[type="radio"]');
-  radios.filter = Array.prototype.filter;
-  var side = radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
+  let side = getCurrentSide()
+
+
+
   let h = view.getAttribute('h');
   let v = view.getAttribute('v');
   let p = new Pos(new Horizontal(h), new Vertical(v))
@@ -69,6 +78,10 @@ var onClickSquareButton = (view) => {
 
 var updateDisplay = () => {
   let board = getCurrentBoard()
+  let side = getCurrentSide()
+  aaa = new PlaceLogic(board).getPlacablePositions(side)
+  console.log(aaa.map(v => v.getHorizontal().getValue() + v.getVertical().getValue()))
+
   for(var x = 0; x < h.length; x++) {
     for(var y = 0; y < v.length; y++) {
       var _h = h[x]

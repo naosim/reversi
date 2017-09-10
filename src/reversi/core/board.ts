@@ -1,7 +1,7 @@
 /// <reference path="disk.ts"/>
 class Board {
   private square: Array<Disk>
-  constructor(square: Array<Disk>) {
+  constructor(square: Array<Disk> = []) {
     this.square = square;
   }
 
@@ -38,6 +38,7 @@ class Board {
   }
 
   look(pos: Pos): Option<Disk> {
-    return OptionFactory.of(this.square[this.posToHash(pos)])
+    let a = this.square[this.posToHash(pos)]
+    return OptionFactory.of(a)
   }
 }
