@@ -1,0 +1,148 @@
+@startuml
+package core {
+  class Horizontal {
+    getNext(): Option<Horizontal>
+    getPrev(): Option<Horizontal>
+  }
+  class Vertical {
+    getNext(): Option<Vertical>
+    getPrev(): Option<Vertical>
+  }
+  class Pos {
+    Horizontal
+    Vertical
+    getNext(d: Direction): Option<Pos>
+    static all(): Array<Pos>
+  }
+  Pos --> Horizontal
+  Pos --> Vertical
+  Pos --> Direction
+  
+  enum Direction {
+    left
+    right
+    up
+    down
+    up_right
+    up_left
+    down_right
+    down_left
+  }
+  
+  class Disk {
+    Side
+    isDark(): boolean
+    isLight(): boolean
+    reverse(): Disk
+    sideIs(Side): boolean
+  }
+  Disk --> Side
+
+  enum Side {
+    light
+    dark
+
+    isDark(): boolean
+    isLight(): boolean
+    reverse(): Side
+  }
+
+  class Board {    
+    getSquareMap(): Array<Disk>
+    place(Pos, Disk): Board
+    replace(Pos, Disk): Board
+    look(Pos): Option<Disk>
+    getScore(): Score
+  }
+  Board --> Disk
+  Board --> Pos
+  Board --> Score
+
+  class Score {
+    getDarkCount(): number
+    getLightCount(): number
+    getWinner(): Option<Side>
+  }
+  Score --> Side
+
+  class PlaceLogic {
+    Board
+    getPlacablePositions(side: Side): Array<Pos>
+    getFlipablePositionsIfPlace(pos:Pos, side: Side): Array<Pos>
+  }
+
+  class Player {
+    side: Side
+    board: Board
+    placeLogic: PlaceLogic
+    
+    place(pos: Pos): Board
+    getPlacablePositions(): Array<Pos>
+    getSide(): Side
+    getBoard(): Board
+  }
+  Player --> Board
+  Player --> Side
+  PlaceLogic <- Player
+}
+
+
+package controller {
+  class Context {
+    board: Board
+    side: Side
+    step: number
+    log: Array<Pos>
+    createNext(board: Board, side: Side, pos: Pos): Context
+  }
+  Context -> Board
+  Context -> Side
+  
+
+  class NextTurnType {
+    dark
+    light
+    gameover
+    getSideForce(): Side
+    isGameOver(): boolean
+    eachCase<T>(onDark: (Side)=>T, onLight: (Side)=>T, onGameOver: ()=>T)
+    static decideNextTurnType(board: Board, currentSide: Side): NextTurnType
+  }
+
+
+  class State {
+    endState: Option<EndState>
+    playerState: Option<PlayerState>
+    
+    getContext(): Context
+    place(pos:Pos): State
+    static createStart(): State
+  }
+  State --> Context
+  State --> EndState
+  State --> PlayerState
+
+  class EndState {
+    private context: Context
+    getContext(): Context
+    getScore(): Score
+    restart(): State
+  }
+  EndState --> Context
+  EndState -> State
+
+  class PlayerState {
+    context: Context
+    player: Player
+
+    getContext(): Context
+    place(pos:Pos): State
+  }
+  PlayerState --> Context
+  PlayerState -> State
+  PlayerState --> NextTurnType
+  PlayerState -> Player
+}
+
+
+@enduml
