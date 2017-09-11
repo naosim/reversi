@@ -485,7 +485,4 @@ var NextTurnType = /** @class */ (function () {
     NextTurnType.gameover = new NextTurnType(OptionFactory.empty());
     return NextTurnType;
 }());
-/// <reference path="core/board.ts"/>
-/// <reference path="core/pos.ts"/>
-/// <reference path="core/player.ts"/>
 /// <reference path="facilitator/state.ts"/>
