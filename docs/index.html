@@ -93,7 +93,7 @@ var updateDisplay = (_state) => {
       b.innerHTML = placablePosList.filter(p => p.eq(pos)).length > 0 ? '?' : ''
     }
   })
-  document.querySelector('#turn').innerHTML = (player.getSide().getValue() == 'dark' ? '黒' : '白')
+  document.querySelector('#turn').innerHTML = (player.getSide().isDark() ? '黒' : '白')
 
   state.getEndState().map(v => v.getScore()).forEach(v => showGameOver(v))
 }
