@@ -92,6 +92,8 @@ class Pos {
     return this.getHorizontal().getValue() + this.getVertical().getValue()
   }
 
+  eq(other:Pos): boolean { return this.getLogValue() == other.getLogValue() }
+
   static all(): Array<Pos> {
     let result = []
     Vertical.all().forEach(v => Horizontal.all().forEach(h => result.push(new Pos(h, v))))

@@ -250,6 +250,7 @@ var Pos = /** @class */ (function () {
     Pos.prototype.getLogValue = function () {
         return this.getHorizontal().getValue() + this.getVertical().getValue();
     };
+    Pos.prototype.eq = function (other) { return this.getLogValue() == other.getLogValue(); };
     Pos.all = function () {
         var result = [];
         Vertical.all().forEach(function (v) { return Horizontal.all().forEach(function (h) { return result.push(new Pos(h, v)); }); });

@@ -33,11 +33,11 @@ var getCurrentBoard = () => {
 }
 var updateBoard = (board) => boardLog.push(board)
 
-var getCurrentSide = () => {
-  let radios = document.querySelectorAll('input[type="radio"]');
-  radios.filter = Array.prototype.filter;
-  return radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
-}
+let radios = document.querySelectorAll('input[type="radio"]');
+radios.filter = Array.prototype.filter;
+var getCurrentSide = () => radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
+radios[0].addEventListener('click', () => updateDisplay())
+radios[1].addEventListener('click', () => updateDisplay())
 
 let h = 'abcdefgh'
 let v = '12345678'
@@ -75,22 +75,23 @@ var onClickSquareButton = (view) => {
 }
 
 var updateDisplay = () => {
+  console.log('update')
   let board = getCurrentBoard()
   let side = getCurrentSide()
-  aaa = new PlaceLogic(board).getPlacablePositions(side)
-  console.log(aaa.map(v => v.getHorizontal().getValue() + v.getVertical().getValue()))
+  let placablePosList = new PlaceLogic(board).getPlacablePositions(side)
 
   for(var x = 0; x < h.length; x++) {
     for(var y = 0; y < v.length; y++) {
       var _h = h[x]
       var _v = v[y]
-      var s = board.look(new Pos(new Horizontal(h[x]), new Vertical(v[y])))
+      var pos = new Pos(new Horizontal(h[x]), new Vertical(v[y]))
+      var s = board.look(pos)
       var selector = `button[h="${_h}"][v="${_v}"]`
       var b = document.querySelector(selector)
       if(s.isDefined()) {
         b.innerHTML = s.get().getValue() == Side.dark ? '●' : '○'
       } else {
-        b.innerHTML = ''
+        b.innerHTML = placablePosList.filter(p => p.eq(pos)).length > 0 ? '?' : ''
       }
     }
   }
