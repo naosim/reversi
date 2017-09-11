@@ -5,6 +5,7 @@ interface Option<T> {
   isDefined():boolean
   isEmpty():boolean
   map<R>(f: (T)=>R): Option<R>
+  forEach(f: (T)=>void)
   flatMap<R>(f: (T)=>Option<R>): Option<R>
   filter<T>(f: (T)=> boolean): Option<T>
 }
@@ -25,6 +26,7 @@ class None<T> implements Option<T> {
   isDefined():boolean { return false }
   isEmpty():boolean { return true }
   map<R>(f: (T)=>R): Option<R> { return new None<R>() as Option<R> }
+  forEach(f: (T)=>void) {}
   flatMap<R>(f: (T)=>Option<R>): Option<R> { return new None<R>() as Option<R> }
   filter<T>(f: (T)=> boolean): Option<T> { return new None<T>() as Option<T> }
 }
@@ -46,6 +48,7 @@ class Some<T> implements Option<T> {
     }
     return new Some(v) as Option<R>
   }
+  forEach(f: (T)=>void) { f(this.value) }
 
   flatMap<R>(f: (T)=>Option<R>): Option<R> {
     let v = f(this.value)
@@ -64,3 +67,4 @@ class Some<T> implements Option<T> {
     }
   }
 }
+

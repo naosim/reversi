@@ -33,7 +33,7 @@
 <div>
 </div>
 <div>手番：<span id="turn">黒</span></div>
-<button id="back">back</button>
+<!-- <button id="back">back</button> -->
 
 <h2>操作説明</h2>
 <ul>
@@ -43,8 +43,7 @@
 
 <script src="js/reversi.core.js"></script>
 <script>
-var player
-var callback
+var state = null;
 
 // setup html table
 (() => {
@@ -62,25 +61,25 @@ var callback
   document.querySelector('div').innerHTML = table
 })()
 
-document.querySelector('#back').addEventListener('click', () => facilitator.back())
-
 var onClickSquareButton = (view) => {
-  let player = facilitator.getCurrentPlayer()
   let p = new Pos(
     new Horizontal(view.getAttribute('h')), 
     new Vertical(view.getAttribute('v'))
   )
   try {
-    var newBoard = player.place(p)
-    callback(newBoard)
+    let s = state.place(p)
+    updateDisplay(s)
   } catch(e) {
     alert(e)
   }
 }
 
-var updateDisplay = (player) => {
+var updateDisplay = (_state) => {
+  state = _state
+  let context = state.getContext()
   console.log('update')
-  let board = player.getBoard()
+  let board = context.getBoard()
+  let player = new Player(context.getSide(), board)
   let placablePosList = player.getPlacablePositions()
   Pos.all().forEach(pos => {
     var s = board.look(pos)
@@ -94,31 +93,20 @@ var updateDisplay = (player) => {
       b.innerHTML = placablePosList.filter(p => p.eq(pos)).length > 0 ? '?' : ''
     }
   })
-
   document.querySelector('#turn').innerHTML = (player.getSide().getValue() == 'dark' ? '黒' : '白')
-}
 
-var facilitator = new ReversiFacilitator()
-facilitator.setEventListener(
-  (darkplayer, cb) => {
-    player = darkplayer
-    callback = cb
-    updateDisplay(darkplayer)
-  },
-  (lightPlayer, cb) => {
-    player = lightPlayer
-    callback = cb
-    updateDisplay(lightPlayer)
-  },
-  (board) => {
-    let score = board.getScore()
+  state.getEndState().map(v => v.getScore()).forEach(v => showGameOver(v))
+}
+updateDisplay(State.createStart())
+
+var showGameOver = (score) => {
+  setTimeout(()=> {
     let winnerSideOption = score.getWinner()
     if(winnerSideOption.isEmpty()) {
       alert('even')
     }
     alert('winner: ' + winnerSideOption.get().getValue())
-  }
-)
-facilitator.start()
-
+  }, 100)
+  
+}
 </script>
