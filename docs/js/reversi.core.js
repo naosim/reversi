@@ -373,6 +373,43 @@ var Player = /** @class */ (function () {
 /// <reference path="../core/player.ts"/>
 /// <reference path="../core/board.ts"/>
 /// <reference path="../core/side.ts"/>
+var NextTurnType = /** @class */ (function () {
+    function NextTurnType(sideOption) {
+        this.sideOption = sideOption;
+    }
+    NextTurnType.prototype.getSideForce = function () { return this.sideOption.get(); };
+    NextTurnType.prototype.isGameOver = function () { return this == NextTurnType.gameover; };
+    NextTurnType.prototype.eachCase = function (onDark, onLight, onGameOver) {
+        if (this == NextTurnType.dark) {
+            return onDark(Side.dark);
+        }
+        else if (this == NextTurnType.light) {
+            return onLight(Side.light);
+        }
+        else {
+            return onGameOver();
+        }
+    };
+    NextTurnType.create = function (side) { return side.isDark() ? this.dark : this.light; };
+    NextTurnType.decideNextTurnType = function (board, currentSide) {
+        // 次の番手が置ける場所があるか
+        if (new PlaceLogic(board).getPlacablePositions(currentSide.reverse()).length > 0) {
+            return NextTurnType.create(currentSide.reverse());
+        }
+        // 今の番手が置ける場所があるか
+        if (new PlaceLogic(board).getPlacablePositions(currentSide).length > 0) {
+            return NextTurnType.create(currentSide);
+        }
+        // 置けるプレイヤがいないなら試合終了
+        return NextTurnType.gameover;
+    };
+    NextTurnType.dark = new NextTurnType(OptionFactory.some(Side.dark));
+    NextTurnType.light = new NextTurnType(OptionFactory.some(Side.light));
+    NextTurnType.gameover = new NextTurnType(OptionFactory.empty());
+    return NextTurnType;
+}());
+/// <reference path="../core/board.ts"/>
+/// <reference path="../core/side.ts"/>
 var Context = /** @class */ (function () {
     function Context(board, side, step, log) {
         if (step === void 0) { step = 1; }
@@ -392,6 +429,11 @@ var Context = /** @class */ (function () {
     };
     return Context;
 }());
+/// <reference path="../core/player.ts"/>
+/// <reference path="../core/board.ts"/>
+/// <reference path="../core/side.ts"/>
+/// <reference path="nextturntype.ts"/>
+/// <reference path="context.ts"/>
 var State = /** @class */ (function () {
     function State(endState, playerState) {
         this.endState = endState;
@@ -449,40 +491,5 @@ var PlayerState = /** @class */ (function () {
         return nextTurnType.eachCase(function (darkSide) { return State.createFromPlayerState(new PlayerState(_this.context.createNext(board, darkSide, pos))); }, function (lightSide) { return State.createFromPlayerState(new PlayerState(_this.context.createNext(board, lightSide, pos))); }, function () { return State.createFromEndState(new EndState(new Context(board, _this.context.getSide(), _this.context.getStep()))); });
     };
     return PlayerState;
-}());
-var NextTurnType = /** @class */ (function () {
-    function NextTurnType(sideOption) {
-        this.sideOption = sideOption;
-    }
-    NextTurnType.prototype.getSideForce = function () { return this.sideOption.get(); };
-    NextTurnType.prototype.isGameOver = function () { return this == NextTurnType.gameover; };
-    NextTurnType.prototype.eachCase = function (onDark, onLight, onGameOver) {
-        if (this == NextTurnType.dark) {
-            return onDark(Side.dark);
-        }
-        else if (this == NextTurnType.light) {
-            return onLight(Side.light);
-        }
-        else {
-            return onGameOver();
-        }
-    };
-    NextTurnType.create = function (side) { return side.isDark() ? this.dark : this.light; };
-    NextTurnType.decideNextTurnType = function (board, currentSide) {
-        // 次の番手が置ける場所があるか
-        if (new PlaceLogic(board).getPlacablePositions(currentSide.reverse()).length > 0) {
-            return NextTurnType.create(currentSide.reverse());
-        }
-        // 今の番手が置ける場所があるか
-        if (new PlaceLogic(board).getPlacablePositions(currentSide).length > 0) {
-            return NextTurnType.create(currentSide);
-        }
-        // 置けるプレイヤがいないなら試合終了
-        return NextTurnType.gameover;
-    };
-    NextTurnType.dark = new NextTurnType(OptionFactory.some(Side.dark));
-    NextTurnType.light = new NextTurnType(OptionFactory.some(Side.light));
-    NextTurnType.gameover = new NextTurnType(OptionFactory.empty());
-    return NextTurnType;
 }());
 /// <reference path="facilitator/state.ts"/>
