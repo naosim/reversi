@@ -126,12 +126,12 @@ var OptionFactory = /** @class */ (function () {
     function OptionFactory() {
     }
     OptionFactory.some = function (t) {
-        if (t == null || t == undefined)
+        if (Some.isNull(t))
             throw 'argument is null or undefined';
         return new Some(t);
     };
     OptionFactory.empty = function () { return new None(); };
-    OptionFactory.of = function (t) { return t == null || t == undefined ? new None() : new Some(t); };
+    OptionFactory.of = function (t) { return Some.isNull(t) ? new None() : new Some(t); };
     return OptionFactory;
 }());
 var None = /** @class */ (function () {
@@ -143,6 +143,7 @@ var None = /** @class */ (function () {
     None.prototype.isDefined = function () { return false; };
     None.prototype.isEmpty = function () { return true; };
     None.prototype.map = function (f) { return new None(); };
+    None.prototype.forEach = function (f) { };
     None.prototype.flatMap = function (f) { return new None(); };
     None.prototype.filter = function (f) { return new None(); };
     return None;
@@ -158,14 +159,15 @@ var Some = /** @class */ (function () {
     Some.prototype.isEmpty = function () { return false; };
     Some.prototype.map = function (f) {
         var v = f(this.value);
-        if (v == null || v == undefined) {
+        if (Some.isNull(v)) {
             return new None();
         }
         return new Some(v);
     };
+    Some.prototype.forEach = function (f) { f(this.value); };
     Some.prototype.flatMap = function (f) {
         var v = f(this.value);
-        if (v == null || v == undefined) {
+        if (Some.isNull(v)) {
             return new None();
         }
         return v;
@@ -179,6 +181,7 @@ var Some = /** @class */ (function () {
             return new None();
         }
     };
+    Some.isNull = function (v) { return v == null || v == undefined; };
     return Some;
 }());
 /// <reference path="../volib.ts"/>
@@ -370,61 +373,121 @@ var Player = /** @class */ (function () {
 }());
 /// <reference path="../core/player.ts"/>
 /// <reference path="../core/board.ts"/>
-var ReversiFacilitator = /** @class */ (function () {
-    function ReversiFacilitator() {
-        this.boardLog = [];
+/// <reference path="../core/side.ts"/>
+var NextTurnType = /** @class */ (function () {
+    function NextTurnType(sideOption) {
+        this.sideOption = sideOption;
     }
-    ReversiFacilitator.prototype.setEventListener = function (onDarkPlayerTurn, onLightPlayerTurn, onEnd) {
-        this.onDarkPlayerTurn = onDarkPlayerTurn;
-        this.onLightPlayerTurn = onLightPlayerTurn;
-        this.onEnd = onEnd;
+    NextTurnType.prototype.getSideForce = function () { return this.sideOption.get(); };
+    NextTurnType.prototype.isGameOver = function () { return this == NextTurnType.gameover; };
+    NextTurnType.prototype.eachCase = function (onDark, onLight, onGameOver) {
+        if (this == NextTurnType.dark) {
+            return onDark(Side.dark);
+        }
+        else if (this == NextTurnType.light) {
+            return onLight(Side.light);
+        }
+        else {
+            return onGameOver();
+        }
     };
-    ReversiFacilitator.prototype.start = function () {
+    NextTurnType.create = function (side) { return side.isDark() ? this.dark : this.light; };
+    NextTurnType.decideNextTurnType = function (board, currentSide) {
+        // 次の番手が置ける場所があるか
+        if (new PlaceLogic(board).getPlacablePositions(currentSide.reverse()).length > 0) {
+            return NextTurnType.create(currentSide.reverse());
+        }
+        // 今の番手が置ける場所があるか
+        if (new PlaceLogic(board).getPlacablePositions(currentSide).length > 0) {
+            return NextTurnType.create(currentSide);
+        }
+        // 置けるプレイヤがいないなら試合終了
+        return NextTurnType.gameover;
+    };
+    NextTurnType.dark = new NextTurnType(OptionFactory.some(Side.dark));
+    NextTurnType.light = new NextTurnType(OptionFactory.some(Side.light));
+    NextTurnType.gameover = new NextTurnType(OptionFactory.empty());
+    return NextTurnType;
+}());
+/// <reference path="../core/board.ts"/>
+/// <reference path="../core/side.ts"/>
+var Context = /** @class */ (function () {
+    function Context(board, side, step, log) {
+        if (step === void 0) { step = 1; }
+        if (log === void 0) { log = []; }
+        this.board = board;
+        this.side = side;
+        this.step = step;
+        this.log = log;
+    }
+    Context.prototype.getSide = function () { return this.side; };
+    Context.prototype.getBoard = function () { return this.board; };
+    Context.prototype.getStep = function () { return this.step; };
+    Context.prototype.createNext = function (board, side, pos) {
+        var ary = [].concat(this.log);
+        ary.push(pos);
+        return new Context(board, side, this.step + 1, ary);
+    };
+    return Context;
+}());
+/// <reference path="../core/player.ts"/>
+/// <reference path="../core/board.ts"/>
+/// <reference path="../core/side.ts"/>
+/// <reference path="nextturntype.ts"/>
+/// <reference path="context.ts"/>
+var State = /** @class */ (function () {
+    function State(endState, playerState) {
+        this.endState = endState;
+        this.playerState = playerState;
+    }
+    State.prototype.getContext = function () {
+        return [this.endState, this.playerState].filter(function (v) { return v.isDefined(); }).map(function (v) { return v.get().getContext(); })[0];
+    };
+    State.prototype.getEndState = function () { return this.endState; };
+    State.prototype.place = function (pos) {
+        if (this.playerState.isEmpty()) {
+            throw 'game over';
+        }
+        return this.playerState.get().place(pos);
+    };
+    State.createFromEndState = function (endState) {
+        return new State(OptionFactory.some(endState), OptionFactory.empty());
+    };
+    State.createFromPlayerState = function (playerState) {
+        return new State(OptionFactory.empty(), OptionFactory.some(playerState));
+    };
+    State.createStart = function () {
         var board = new Board([])
             .place(new Pos(new Horizontal("d"), new Vertical("4")), new Disk(Side.dark))
             .place(new Pos(new Horizontal("e"), new Vertical("4")), new Disk(Side.light))
             .place(new Pos(new Horizontal("d"), new Vertical("5")), new Disk(Side.light))
             .place(new Pos(new Horizontal("e"), new Vertical("5")), new Disk(Side.dark));
-        this.update(board);
+        var context = new Context(board, Side.dark);
+        return this.createFromPlayerState(new PlayerState(context));
     };
-    ReversiFacilitator.prototype.back = function () {
-        if (this.boardLog.length < 2) {
-            throw 'log not exists';
-        }
-        this.boardLog.pop(); // remove
-        var t = this.boardLog.pop();
-        this.update(t[0], t[1]);
-    };
-    ReversiFacilitator.prototype.update = function (board, currentSide) {
-        var _this = this;
-        if (currentSide === void 0) { currentSide = Side.light; }
-        this.boardLog.push([board, currentSide]);
-        this.board = board;
-        this.currentTurn = currentSide.reverse();
-        if (new PlaceLogic(board).getPlacablePositions(this.currentTurn).length == 0) {
-            this.currentTurn = this.currentTurn.reverse();
-        }
-        if (new PlaceLogic(board).getPlacablePositions(this.currentTurn).length == 0) {
-            // 試合終了
-            this.onEnd(this.board);
-        }
-        if (this.currentTurn.isDark()) {
-            this.onDarkPlayerTurn(this.getCurrentPlayer(), function (b) { return _this.update(b, _this.currentTurn); });
-        }
-        else {
-            this.onLightPlayerTurn(this.getCurrentPlayer(), function (b) { return _this.update(b, _this.currentTurn); });
-        }
-    };
-    ReversiFacilitator.prototype.getCurrentBoard = function () { return this.board; };
-    ReversiFacilitator.prototype.getCurrentPlayer = function () { return new Player(this.currentTurn, this.board); };
-    return ReversiFacilitator;
+    return State;
 }());
-/// <reference path="core/board.ts"/>
-/// <reference path="core/pos.ts"/>
-/// <reference path="core/player.ts"/>
-/// <reference path="facilitator/ReversiFacilitator.ts"/>
-// var board = new Board([])
-//   .place(new Pos(new Horizontal("d"), new Vertical("4")), new Disk(Side.dark))
-//   .place(new Pos(new Horizontal("e"), new Vertical("4")), new Disk(Side.light))
-//   .place(new Pos(new Horizontal("d"), new Vertical("5")), new Disk(Side.light))
-//   .place(new Pos(new Horizontal("e"), new Vertical("5")), new Disk(Side.dark));
+var EndState = /** @class */ (function () {
+    function EndState(context) {
+        this.context = context;
+    }
+    EndState.prototype.getContext = function () { return this.context; };
+    EndState.prototype.getScore = function () { return this.context.getBoard().getScore(); };
+    EndState.prototype.restart = function () { return State.createStart(); };
+    return EndState;
+}());
+var PlayerState = /** @class */ (function () {
+    function PlayerState(context) {
+        this.context = context;
+        this.player = new Player(context.getSide(), context.getBoard());
+    }
+    PlayerState.prototype.getContext = function () { return this.context; };
+    PlayerState.prototype.place = function (pos) {
+        var _this = this;
+        var board = this.player.place(pos);
+        var nextTurnType = NextTurnType.decideNextTurnType(board, this.player.getSide());
+        return nextTurnType.eachCase(function (darkSide) { return State.createFromPlayerState(new PlayerState(_this.context.createNext(board, darkSide, pos))); }, function (lightSide) { return State.createFromPlayerState(new PlayerState(_this.context.createNext(board, lightSide, pos))); }, function () { return State.createFromEndState(new EndState(new Context(board, _this.context.getSide(), _this.context.getStep()))); });
+    };
+    return PlayerState;
+}());
+/// <reference path="facilitator/state.ts"/>
