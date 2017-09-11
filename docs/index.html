@@ -23,7 +23,6 @@
 <ul>
   <li>黒、白のラジオボタンを切り替えるとプレイヤーを変更できる</li>
   <li>空の場所をクリックすると駒を置ける</li>
-  <li>すでに駒のある場所をクリックすると白黒を反転できる</li>
 </ul>
 
 <script src="js/reversi.core.js"></script>
@@ -60,20 +59,19 @@ var onClickSquareButton = (view) => {
   let board = getCurrentBoard()
   let side = getCurrentSide()
 
-
-
   let h = view.getAttribute('h');
   let v = view.getAttribute('v');
   let p = new Pos(new Horizontal(h), new Vertical(v))
-  var s = board.look(p)
+
+  var player = new Player(side, board)
   
-  if(s.isDefined()) {
-    var disk = new Disk(s.get().getValue() == Side.dark ? Side.light : Side.dark);
-    updateBoard(board.replace(p, disk))
-  } else {
-    updateBoard(board.place(p, new Disk(side)));
+  try {
+    var newBoard = player.place(p)
+    updateBoard(newBoard)
+    updateDisplay();
+  } catch(e) {
+    alert(e)
   }
-  updateDisplay();
 }
 
 var updateDisplay = () => {

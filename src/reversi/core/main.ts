@@ -1,6 +1,6 @@
 /// <reference path="board.ts"/>
 /// <reference path="pos.ts"/>
-/// <reference path="placelogic.ts"/>
+/// <reference path="player.ts"/>
 
 var board = new Board([])
   .place(new Pos(new Horizontal("d"), new Vertical("4")), new Disk(Side.dark))

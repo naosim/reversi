@@ -308,9 +308,32 @@ var PlaceLogic = /** @class */ (function () {
     };
     return PlaceLogic;
 }());
+/// <reference path="../volib.ts"/>
+/// <reference path="side.ts"/>
 /// <reference path="board.ts"/>
 /// <reference path="pos.ts"/>
 /// <reference path="placelogic.ts"/>
+var Player = /** @class */ (function () {
+    function Player(side, board) {
+        this.side = side;
+        this.board = board;
+        this.placeLogic = new PlaceLogic(board);
+    }
+    Player.prototype.place = function (pos) {
+        var _this = this;
+        var posList = this.placeLogic.getFlipablePositionsIfPlace(pos, this.side);
+        if (posList.length == 0) {
+            throw this.side.getValue() + " player cant place at " + pos.getLogValue();
+        }
+        return posList
+            .reduce(function (board, pos) { return board.replace(pos, new Disk(_this.side)); }, this.board)
+            .place(pos, new Disk(this.side));
+    };
+    return Player;
+}());
+/// <reference path="board.ts"/>
+/// <reference path="pos.ts"/>
+/// <reference path="player.ts"/>
 var board = new Board([])
     .place(new Pos(new Horizontal("d"), new Vertical("4")), new Disk(Side.dark))
     .place(new Pos(new Horizontal("e"), new Vertical("4")), new Disk(Side.light))
