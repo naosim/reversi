@@ -21,4 +21,10 @@ class Player {
       .reduce((board, pos) => board.replace(pos, new Disk(this.side)), this.board)
       .place(pos, new Disk(this.side))
   }
+  getPlacablePositions(): Array<Pos>{
+    return this.placeLogic.getPlacablePositions(this.side)
+  }
+  getSide(): Side { return this.side }
+  getBoard(): Board { return this.board }
+
 }

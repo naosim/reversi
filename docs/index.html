@@ -10,6 +10,21 @@
   td > button {
     width: 100%;
     height: 100%;
+    background: #080;
+    border-style: none;
+    border-width: 0px;
+    font-family: monospace;
+  }
+  td > button.dark {
+    color: black;
+  }
+  td > button.light {
+    color: white;
+  }
+  table, tr, td {
+    border-spacing: 0px;
+    margin: 0px;
+    padding: 0px;
   }
 </style>
 <title>俺のオセロ</title>
@@ -17,8 +32,7 @@
 <h1>俺のオセロ</h1>
 <div>
 </div>
-<input type="radio" name="side" value="dark" checked="checked">黒</input>
-<input type="radio" name="side" value="light">白</input>
+<div>手番：<span id="turn">黒</span></div>
 <button id="back">back</button>
 
 <h2>操作説明</h2>
@@ -29,83 +43,82 @@
 
 <script src="js/reversi.core.js"></script>
 <script>
-var boardLog = [board];
-var getCurrentBoard = () => {
-  return boardLog[boardLog.length - 1];
-}
-var updateBoard = (board) => boardLog.push(board)
+var player
+var callback
 
-let radios = document.querySelectorAll('input[type="radio"]');
-radios.filter = Array.prototype.filter;
-var getCurrentSide = () => radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
-radios[0].addEventListener('click', () => updateDisplay())
-radios[1].addEventListener('click', () => updateDisplay())
-
-let h = 'abcdefgh'
-let v = '12345678'
-var table = '<table>';
-for(var y = 0; y < v.length; y++) {
-  table += '<tr>';
+// setup html table
+(() => {
+  let h = 'abcdefgh';
+  let v = '12345678';
+  var table = '<table>';
+  for(var y = 0; y < v.length; y++) {
+    table += '<tr>'
     for(var x = 0; x < h.length; x++) {
-    var s = board.look(new Pos(new Horizontal(h[x]), new Vertical(v[y])))
-    table += `<td><button h="${h[x]}" v="${v[y]}" onClick="onClickSquareButton(this)"></button></td>`
+      table += `<td><button h="${h[x]}" v="${v[y]}" onClick="onClickSquareButton(this)"></button></td>`
+    }
+    table += '</tr>'
   }
-  table += '</tr>';
-}
-table += '</table>';
-document.querySelector('div').innerHTML = table;
+  table += '</table>'
+  document.querySelector('div').innerHTML = table
+})()
 
-var aaa = null
+document.querySelector('#back').addEventListener('click', () => facilitator.back())
 
 var onClickSquareButton = (view) => {
-  let board = getCurrentBoard()
-  let side = getCurrentSide()
-
-  let h = view.getAttribute('h');
-  let v = view.getAttribute('v');
-  let p = new Pos(new Horizontal(h), new Vertical(v))
-
-  var player = new Player(side, board)
-  
+  let player = facilitator.getCurrentPlayer()
+  let p = new Pos(
+    new Horizontal(view.getAttribute('h')), 
+    new Vertical(view.getAttribute('v'))
+  )
   try {
     var newBoard = player.place(p)
-    updateBoard(newBoard)
-    updateDisplay();
+    callback(newBoard)
   } catch(e) {
     alert(e)
   }
 }
 
-var updateDisplay = () => {
+var updateDisplay = (player) => {
   console.log('update')
-  let board = getCurrentBoard()
-  let side = getCurrentSide()
-  let placablePosList = new PlaceLogic(board).getPlacablePositions(side)
-
-  for(var x = 0; x < h.length; x++) {
-    for(var y = 0; y < v.length; y++) {
-      var _h = h[x]
-      var _v = v[y]
-      var pos = new Pos(new Horizontal(h[x]), new Vertical(v[y]))
-      var s = board.look(pos)
-      var selector = `button[h="${_h}"][v="${_v}"]`
-      var b = document.querySelector(selector)
-      if(s.isDefined()) {
-        b.innerHTML = s.get().getValue() == Side.dark ? '●' : '○'
-      } else {
-        b.innerHTML = placablePosList.filter(p => p.eq(pos)).length > 0 ? '?' : ''
-      }
+  let board = player.getBoard()
+  let placablePosList = player.getPlacablePositions()
+  Pos.all().forEach(pos => {
+    var s = board.look(pos)
+    let selector = `button[h="${pos.getHorizontal().getValue()}"][v="${pos.getVertical().getValue()}"]`
+    var b = document.querySelector(selector)
+    if(s.isDefined()) {
+      b.className = s.get().getValue().getValue()
+      b.innerHTML = '●'
+    } else {
+      b.className = ''
+      b.innerHTML = placablePosList.filter(p => p.eq(pos)).length > 0 ? '?' : ''
     }
-  }
-}
-updateDisplay();
+  })
 
-document.querySelector('#back').addEventListener('click', () => {
-  if(boardLog.length < 2) {
-    return;
+  document.querySelector('#turn').innerHTML = (player.getSide().getValue() == 'dark' ? '黒' : '白')
+}
+
+var facilitator = new ReversiFacilitator()
+facilitator.setEventListener(
+  (darkplayer, cb) => {
+    player = darkplayer
+    callback = cb
+    updateDisplay(darkplayer)
+  },
+  (lightPlayer, cb) => {
+    player = lightPlayer
+    callback = cb
+    updateDisplay(lightPlayer)
+  },
+  (board) => {
+    let score = board.getScore()
+    let winnerSideOption = score.getWinner()
+    if(winnerSideOption.isEmpty()) {
+      alert('even')
+    }
+    alert('winner: ' + winnerSideOption.get().getValue())
   }
-  boardLog.pop();
-  updateDisplay();
-})
+)
+facilitator.start()
 
 </script>
