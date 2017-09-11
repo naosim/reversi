@@ -41,4 +41,37 @@ class Board {
     let a = this.square[this.posToHash(pos)]
     return OptionFactory.of(a)
   }
+
+  getScore():Score {
+    var d = 0
+    var l = 0
+    let m = this.getSquareMap()
+    Object.keys(this.getSquareMap())
+      .map(k => m[k])
+      .forEach(v => {
+        if(v.getValue().isDark()) {
+          d++
+        } else {
+          l++
+        }
+      });
+    return new Score(d, l);
+  }
+}
+
+class Score {
+  private darkCount: number
+  private lightCount: number
+  constructor(darkCount: number, lightCount: number) {
+    this.darkCount = darkCount
+    this.lightCount = lightCount
+  }
+  getDarkCount(): number { return this.darkCount }
+  getLightCount(): number { return this.lightCount }
+  getWinner(): Option<Side> {
+    if(this.darkCount == this.lightCount) {
+      return OptionFactory.empty()
+    }
+    return OptionFactory.some(this.darkCount > this.lightCount ? Side.dark : Side.light)
+  }
 }

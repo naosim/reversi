@@ -1,1 +1,1 @@
-tsc src/reversi/core/main.ts --out docs/js/reversi.core.js
+tsc src/reversi/main.ts --out docs/js/reversi.core.js
