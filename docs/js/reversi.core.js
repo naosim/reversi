@@ -375,9 +375,7 @@ var ReversiFacilitator = /** @class */ (function () {
         this.boardLog = [];
     }
     ReversiFacilitator.prototype.setEventListener = function (onDarkPlayerTurn, onLightPlayerTurn, onEnd) {
-        this.onDarkPlayerTurn = onDarkPlayerTurn;
-        this.onLightPlayerTurn = onLightPlayerTurn;
-        this.onEnd = onEnd;
+        this.listener = new ReversiFacilitatorListener(onDarkPlayerTurn, onLightPlayerTurn, onEnd);
     };
     ReversiFacilitator.prototype.start = function () {
         var board = new Board([])
@@ -400,24 +398,62 @@ var ReversiFacilitator = /** @class */ (function () {
         if (currentSide === void 0) { currentSide = Side.light; }
         this.boardLog.push([board, currentSide]);
         this.board = board;
-        this.currentTurn = currentSide.reverse();
-        if (new PlaceLogic(board).getPlacablePositions(this.currentTurn).length == 0) {
-            this.currentTurn = this.currentTurn.reverse();
+        var nextTurnType = ReversiFacilitator.decideNextTurnType(board, currentSide);
+        nextTurnType.eachCase(function (side) {
+            _this.currentTurn = side;
+            _this.listener.onDarkPlayerTurn(_this.getCurrentPlayer(), function (b) { return _this.update(b, _this.currentTurn); });
+        }, function (side) {
+            _this.currentTurn = side;
+            _this.listener.onLightPlayerTurn(_this.getCurrentPlayer(), function (b) { return _this.update(b, _this.currentTurn); });
+        }, // onEnd
+        function () { return _this.listener.onEnd(_this.board); });
+    };
+    ReversiFacilitator.decideNextTurnType = function (board, currentSide) {
+        // 次の番手が置ける場所があるか
+        if (new PlaceLogic(board).getPlacablePositions(currentSide.reverse()).length > 0) {
+            return NextTurnType.create(currentSide.reverse());
         }
-        if (new PlaceLogic(board).getPlacablePositions(this.currentTurn).length == 0) {
-            // 試合終了
-            this.onEnd(this.board);
+        // 今の番手が置ける場所があるか
+        if (new PlaceLogic(board).getPlacablePositions(currentSide).length > 0) {
+            return NextTurnType.create(currentSide);
         }
-        if (this.currentTurn.isDark()) {
-            this.onDarkPlayerTurn(this.getCurrentPlayer(), function (b) { return _this.update(b, _this.currentTurn); });
-        }
-        else {
-            this.onLightPlayerTurn(this.getCurrentPlayer(), function (b) { return _this.update(b, _this.currentTurn); });
-        }
+        // 置けるプレイヤがいないなら試合終了
+        return NextTurnType.gameover;
     };
     ReversiFacilitator.prototype.getCurrentBoard = function () { return this.board; };
     ReversiFacilitator.prototype.getCurrentPlayer = function () { return new Player(this.currentTurn, this.board); };
     return ReversiFacilitator;
+}());
+var ReversiFacilitatorListener = /** @class */ (function () {
+    function ReversiFacilitatorListener(onDarkPlayerTurn, onLightPlayerTurn, onEnd) {
+        this.onDarkPlayerTurn = onDarkPlayerTurn;
+        this.onLightPlayerTurn = onLightPlayerTurn;
+        this.onEnd = onEnd;
+    }
+    return ReversiFacilitatorListener;
+}());
+var NextTurnType = /** @class */ (function () {
+    function NextTurnType(sideOption) {
+        this.sideOption = sideOption;
+    }
+    NextTurnType.prototype.getSideForce = function () { return this.sideOption.get(); };
+    NextTurnType.prototype.isGameOver = function () { return this == NextTurnType.gameover; };
+    NextTurnType.prototype.eachCase = function (onDark, onLight, onGameOver) {
+        if (this == NextTurnType.dark) {
+            onDark(Side.dark);
+        }
+        else if (this == NextTurnType.light) {
+            onLight(Side.light);
+        }
+        else {
+            onGameOver();
+        }
+    };
+    NextTurnType.create = function (side) { return side.isDark() ? this.dark : this.light; };
+    NextTurnType.dark = new NextTurnType(OptionFactory.some(Side.dark));
+    NextTurnType.light = new NextTurnType(OptionFactory.some(Side.light));
+    NextTurnType.gameover = new NextTurnType(OptionFactory.empty());
+    return NextTurnType;
 }());
 /// <reference path="core/board.ts"/>
 /// <reference path="core/pos.ts"/>
