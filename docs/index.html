@@ -37,8 +37,7 @@
 
 <h2>操作説明</h2>
 <ul>
-  <li>黒、白のラジオボタンを切り替えるとプレイヤを変更できる ※ターンごとのプレイヤ切替えは自分でやってね！！</li>
-  <li>空の場所をクリックすると駒を置ける</li>
+  <li>？の場所に石を置ける</li>
 </ul>
 
 <script src="js/reversi.core.js"></script>
@@ -102,10 +101,12 @@ updateDisplay(State.createStart())
 var showGameOver = (score) => {
   setTimeout(()=> {
     let winnerSideOption = score.getWinner()
-    if(winnerSideOption.isEmpty()) {
-      alert('even')
+    var message = winnerSideOption
+      .map(v => 'winner: ' + winnerSideOption.get().getValue())
+      .getOrElse('even')
+    if(confirm(`${message}\n\nrestart?`)) {
+      updateDisplay(state.getEndState().get().restart())
     }
-    alert('winner: ' + winnerSideOption.get().getValue())
   }, 100)
   
 }

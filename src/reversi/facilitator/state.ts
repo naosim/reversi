@@ -4,8 +4,6 @@
 /// <reference path="nextturntype.ts"/>
 /// <reference path="context.ts"/>
 
-
-
 class State {
   private endState: Option<EndState>
   private playerState: Option<PlayerState>
@@ -49,13 +47,12 @@ class EndState {
   constructor(context: Context) {
     this.context = context
   }
-  getContext(): Context {
-    return this.context
-  }
 
-  getScore(): Score {
-    return this.context.getBoard().getScore()
-  }
+  getContext(): Context { return this.context }
+
+  getScore(): Score { return this.context.getBoard().getScore() }
+
+  restart(): State { return State.createStart() }
 }
 
 class PlayerState {

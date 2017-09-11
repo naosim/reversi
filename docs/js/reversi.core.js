@@ -126,12 +126,12 @@ var OptionFactory = /** @class */ (function () {
     function OptionFactory() {
     }
     OptionFactory.some = function (t) {
-        if (t == null || t == undefined)
+        if (Some.isNull(t))
             throw 'argument is null or undefined';
         return new Some(t);
     };
     OptionFactory.empty = function () { return new None(); };
-    OptionFactory.of = function (t) { return t == null || t == undefined ? new None() : new Some(t); };
+    OptionFactory.of = function (t) { return Some.isNull(t) ? new None() : new Some(t); };
     return OptionFactory;
 }());
 var None = /** @class */ (function () {
@@ -159,7 +159,7 @@ var Some = /** @class */ (function () {
     Some.prototype.isEmpty = function () { return false; };
     Some.prototype.map = function (f) {
         var v = f(this.value);
-        if (v == null || v == undefined) {
+        if (Some.isNull(v)) {
             return new None();
         }
         return new Some(v);
@@ -167,7 +167,7 @@ var Some = /** @class */ (function () {
     Some.prototype.forEach = function (f) { f(this.value); };
     Some.prototype.flatMap = function (f) {
         var v = f(this.value);
-        if (v == null || v == undefined) {
+        if (Some.isNull(v)) {
             return new None();
         }
         return v;
@@ -181,6 +181,7 @@ var Some = /** @class */ (function () {
             return new None();
         }
     };
+    Some.isNull = function (v) { return v == null || v == undefined; };
     return Some;
 }());
 /// <reference path="../volib.ts"/>
@@ -470,12 +471,9 @@ var EndState = /** @class */ (function () {
     function EndState(context) {
         this.context = context;
     }
-    EndState.prototype.getContext = function () {
-        return this.context;
-    };
-    EndState.prototype.getScore = function () {
-        return this.context.getBoard().getScore();
-    };
+    EndState.prototype.getContext = function () { return this.context; };
+    EndState.prototype.getScore = function () { return this.context.getBoard().getScore(); };
+    EndState.prototype.restart = function () { return State.createStart(); };
     return EndState;
 }());
 var PlayerState = /** @class */ (function () {
