@@ -12,7 +12,9 @@
     height: 100%;
   }
 </style>
+<title>俺のオセロ</title>
 
+<h1>俺のオセロ</h1>
 <div>
 </div>
 <input type="radio" name="side" value="dark" checked="checked">黒</input>
@@ -21,9 +23,8 @@
 
 <h2>操作説明</h2>
 <ul>
-  <li>黒、白のラジオボタンを切り替えるとプレイヤーを変更できる</li>
+  <li>黒、白のラジオボタンを切り替えるとプレイヤを変更できる ※ターンごとのプレイヤ切替えは自分でやってね！！</li>
   <li>空の場所をクリックすると駒を置ける</li>
-  <li>すでに駒のある場所をクリックすると白黒を反転できる</li>
 </ul>
 
 <script src="js/reversi.core.js"></script>
@@ -34,12 +35,18 @@ var getCurrentBoard = () => {
 }
 var updateBoard = (board) => boardLog.push(board)
 
+let radios = document.querySelectorAll('input[type="radio"]');
+radios.filter = Array.prototype.filter;
+var getCurrentSide = () => radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
+radios[0].addEventListener('click', () => updateDisplay())
+radios[1].addEventListener('click', () => updateDisplay())
+
 let h = 'abcdefgh'
 let v = '12345678'
 var table = '<table>';
-for(var x = 0; x < h.length; x++) {
+for(var y = 0; y < v.length; y++) {
   table += '<tr>';
-  for(var y = 0; y < v.length; y++) {
+    for(var x = 0; x < h.length; x++) {
     var s = board.look(new Pos(new Horizontal(h[x]), new Vertical(v[y])))
     table += `<td><button h="${h[x]}" v="${v[y]}" onClick="onClickSquareButton(this)"></button></td>`
   }
@@ -48,38 +55,45 @@ for(var x = 0; x < h.length; x++) {
 table += '</table>';
 document.querySelector('div').innerHTML = table;
 
+var aaa = null
+
 var onClickSquareButton = (view) => {
   let board = getCurrentBoard()
-  let radios = document.querySelectorAll('input[type="radio"]');
-  radios.filter = Array.prototype.filter;
-  var side = radios.filter(v => v.checked).map(v => v.value)[0] == 'dark' ? Side.dark : Side.light;
+  let side = getCurrentSide()
+
   let h = view.getAttribute('h');
   let v = view.getAttribute('v');
   let p = new Pos(new Horizontal(h), new Vertical(v))
-  var s = board.look(p)
+
+  var player = new Player(side, board)
   
-  if(s) {
-    var disk = new Disk(s.value == Side.dark ? Side.light : Side.dark);
-    updateBoard(board.replace(p, disk))
-  } else {
-    updateBoard(board.place(p, new Disk(side)));
+  try {
+    var newBoard = player.place(p)
+    updateBoard(newBoard)
+    updateDisplay();
+  } catch(e) {
+    alert(e)
   }
-  updateDisplay();
 }
 
 var updateDisplay = () => {
+  console.log('update')
   let board = getCurrentBoard()
+  let side = getCurrentSide()
+  let placablePosList = new PlaceLogic(board).getPlacablePositions(side)
+
   for(var x = 0; x < h.length; x++) {
     for(var y = 0; y < v.length; y++) {
       var _h = h[x]
       var _v = v[y]
-      var s = board.look(new Pos(new Horizontal(h[x]), new Vertical(v[y])))
+      var pos = new Pos(new Horizontal(h[x]), new Vertical(v[y]))
+      var s = board.look(pos)
       var selector = `button[h="${_h}"][v="${_v}"]`
       var b = document.querySelector(selector)
-      if(s) {
-        b.innerHTML = s.value == Side.dark ? '●' : '○'
+      if(s.isDefined()) {
+        b.innerHTML = s.get().getValue() == Side.dark ? '●' : '○'
       } else {
-        b.innerHTML = ''
+        b.innerHTML = placablePosList.filter(p => p.eq(pos)).length > 0 ? '?' : ''
       }
     }
   }

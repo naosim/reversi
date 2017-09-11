@@ -1,7 +1,7 @@
 /// <reference path="disk.ts"/>
 class Board {
   private square: Array<Disk>
-  constructor(square: Array<Disk>) {
+  constructor(square: Array<Disk> = []) {
     this.square = square;
   }
 
@@ -18,7 +18,7 @@ class Board {
   }
 
   place(pos: Pos, disk: Disk): Board {
-    if(this.look(pos)) {
+    if(this.look(pos).isDefined()) {
       throw "disk already exists"
     }
     let newSquare: Array<Disk> = this.getSquareMap()// copy
@@ -28,7 +28,7 @@ class Board {
   }
 
   replace(pos: Pos, disk: Disk): Board {
-    if(!this.look(pos)) {
+    if(this.look(pos).isEmpty()) {
       throw "disk not exists"
     }
     let newSquare: Array<Disk> = this.getSquareMap()// copy
@@ -37,7 +37,8 @@ class Board {
     return new Board(newSquare)
   }
 
-  look(pos: Pos): Disk {
-    return this.square[this.posToHash(pos)]
+  look(pos: Pos): Option<Disk> {
+    let a = this.square[this.posToHash(pos)]
+    return OptionFactory.of(a)
   }
 }

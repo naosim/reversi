@@ -7,4 +7,4 @@ class ValueObject<T> {
     return this.value;
   }
 }
-class StringVO extends ValueObject<String> {}
+class StringVO extends ValueObject<string> {}
